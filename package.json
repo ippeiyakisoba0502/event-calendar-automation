@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "connpass:crawl": "node scripts/connpass_crawler.js",
+    "connpass:crawl:sheet": "node scripts/connpass_crawler.js --sheet",
+    "connpass:keywords": "node scripts/connpass_keyword_refinement.js",
+    "events:calendar": "node scripts/event_calendar_sheet.js",
+    "events:monthly": "node scripts/monthly_event_workflow.js",
+    "peatix:keywords": "node scripts/peatix_keyword_refinement.js",
+    "peatix:crawl": "node scripts/peatix_crawler.js",
+    "peatix:crawl:sheet": "node scripts/peatix_crawler.js --sheet"
+  },
+  "dependencies": {
+    "googleapis": "^173.0.0"
+  },
+  "name": "event-calendar-automation",
+  "private": "true"
+}
