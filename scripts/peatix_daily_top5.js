@@ -54,7 +54,7 @@ function usage() {
   node scripts/peatix_daily_top5.js --start YYYY-MM-DD --end YYYY-MM-DD --target-sheet TITLE [options]
 
 Options:
-  --pages N           Pages per keyword for each date. Default: 5.
+  --pages N           Pages per keyword for each date. Default: 8.
   --keywords CSV      Search keywords. Defaults to the monthly Peatix keyword set.
   --within-km N       Radius from Tokyo Station. Default: 50.
   --delay-ms N        Delay between Peatix requests. Default: 350.
@@ -66,7 +66,7 @@ Options:
 
 function parseArgs(argv) {
   const args = {
-    pages: 5,
+    pages: 8,
     keywords: DEFAULT_KEYWORDS.join(","),
     withinKm: 50,
     delayMs: 350,
