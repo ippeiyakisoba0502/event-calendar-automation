@@ -17,6 +17,38 @@ const DEFAULT_KEYWORDS = [
   "ミートアップ", "Meetup", "現地開催",
 ];
 
+const PREFERRED_COMPANY_TERMS = [
+  "Ubie",
+  "LinkedIn",
+  "kubell",
+  "サイボウズ",
+  "Offers",
+  "SmartHR",
+  "LayerX",
+  "freee",
+  "マネーフォワード",
+  "Sansan",
+  "メルカリ",
+  "DeNA",
+  "LINEヤフー",
+  "リクルート",
+  "楽天",
+  "GMO",
+  "サイバーエージェント",
+  "Google",
+  "Microsoft",
+  "AWS",
+  "Amazon",
+  "Salesforce",
+  "Adobe",
+  "NTT",
+  "KDDI",
+  "ソフトバンク",
+  "富士通",
+  "日立",
+  "IBM",
+];
+
 function usage() {
   return `Usage:
   node scripts/peatix_daily_top5.js --start YYYY-MM-DD --end YYYY-MM-DD --target-sheet TITLE [options]
@@ -137,8 +169,8 @@ function eventSort(a, b) {
   const aTime = tokyoTime(a.event) || { hour: 99, minute: 99 };
   const bTime = tokyoTime(b.event) || { hour: 99, minute: 99 };
   return (
-    priorityRank(a.screening.priority) - priorityRank(b.screening.priority) ||
     relevanceScore(b.event) - relevanceScore(a.event) ||
+    priorityRank(a.screening.priority) - priorityRank(b.screening.priority) ||
     aTime.hour - bTime.hour ||
     aTime.minute - bTime.minute ||
     String(a.event.name).localeCompare(String(b.event.name), "ja")
@@ -150,11 +182,26 @@ function relevanceScore(event) {
     .filter(Boolean)
     .join(" ");
   let score = 0;
+  if (PREFERRED_COMPANY_TERMS.some((term) => text.toLowerCase().includes(term.toLowerCase()))) {
+    score += 10;
+  }
+  if (/(参加費)?無料|free\s*(event|seminar|workshop)?/i.test(text)) score += 4;
   if (/(20代|20歳|25歳|30歳|35歳|若手|U30|第二新卒)/i.test(text)) score += 5;
   if (/(AI|生成AI|DX|SaaS|エンジニア|プロダクト|新規事業|事業開発)/i.test(text)) score += 4;
   if (/(キャリア|人事|HR|採用|営業|セールス|マーケ|広報|PR|デザイン|UX|PM|PdM|財務|法務|マネジメント)/i.test(text)) score += 3;
-  if (/(勉強会|セミナー|ワークショップ|事例|実践|学ぶ|LT)/i.test(text)) score += 2;
-  if (/(交流会|懇親会|コミュニティ|対話)/i.test(text)) score += 1;
+  const hasLearning = /(勉強会|セミナー|ワークショップ|研究会|講座|事例|実践|学ぶ|LT|登壇|セッション)/i.test(text);
+  const hasInteraction = /(交流会|懇親会|コミュニティ|対話|ネットワーキング|ミートアップ|Meetup)/i.test(text);
+  if (hasLearning) score += 2;
+  if (hasInteraction) score += 1;
+  if (hasLearning && hasInteraction) score += 6;
+  const attendanceNumbers = [...text.matchAll(/(?:定員|先着|最大)?\s*([1-9][0-9]{1,3})\s*(?:名|人)/g)]
+    .map((match) => Number(match[1]))
+    .filter(Number.isFinite);
+  const maxAttendance = attendanceNumbers.length ? Math.max(...attendanceNumbers) : 0;
+  if (maxAttendance >= 100) score += 6;
+  else if (maxAttendance >= 50) score += 4;
+  else if (maxAttendance >= 20) score += 2;
+  if (/(大規模|大型|カンファレンス|conference|満席)/i.test(text)) score += 3;
   return score;
 }
 
@@ -343,6 +390,7 @@ module.exports = {
   placeLabel,
   priceLabel,
   relevanceScore,
+  PREFERRED_COMPANY_TERMS,
   dedupeCandidates,
   eventSort,
   candidateCell,

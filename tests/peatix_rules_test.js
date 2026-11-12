@@ -8,7 +8,9 @@ const {
   placeLabel,
   priceLabel,
   relevanceScore,
+  PREFERRED_COMPANY_TERMS,
   dedupeCandidates,
+  eventSort,
 } = require("../scripts/peatix_daily_top5");
 
 function event(name, overrides = {}) {
@@ -108,6 +110,27 @@ assert.strictEqual(priceLabel(event("無料テスト")), "0円");
 assert.ok(
   relevanceScore(event("【20歳〜35歳限定】生成AIマーケティング勉強会")) >
     relevanceScore(event("ビジネス交流会"))
+);
+assert.ok(PREFERRED_COMPANY_TERMS.includes("Ubie"));
+assert.ok(PREFERRED_COMPANY_TERMS.includes("LinkedIn"));
+assert.ok(PREFERRED_COMPANY_TERMS.includes("サイボウズ"));
+const firstChoice = event(
+  "Ubie×Offers｜AI人事セミナー・交流会【参加無料・定員100名】",
+  { organizerName: "Ubie株式会社" }
+);
+const ordinaryChoice = event("AI人事セミナー");
+assert.ok(relevanceScore(firstChoice) > relevanceScore(ordinaryChoice) + 20);
+assert.ok(
+  relevanceScore(event("AIセミナー＋交流会")) > relevanceScore(event("AIセミナー")),
+  "learning plus interaction should receive a combo bonus"
+);
+assert.strictEqual(
+  [
+    { event: ordinaryChoice, screening: { priority: "高" } },
+    { event: firstChoice, screening: { priority: "中" } },
+  ].sort(eventSort)[0].event,
+  firstChoice,
+  "first-choice score should outrank the legacy high/medium label"
 );
 assert.strictEqual(
   dedupeCandidates([
