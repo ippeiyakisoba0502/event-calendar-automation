@@ -114,7 +114,19 @@ function tokyoTime(event) {
 
 function isNightEvent(event, expectedDate) {
   const time = tokyoTime(event);
-  return Boolean(time && time.date === expectedDate && time.hour >= 18 && time.hour <= 22);
+  return Boolean(
+    time &&
+    time.date === expectedDate &&
+    time.hour >= 18 &&
+    time.hour <= 22 &&
+    isSingleDayEvent(event)
+  );
+}
+
+function isSingleDayEvent(event) {
+  const days = Number(event.days);
+  if (Number.isFinite(days) && days > 1) return false;
+  return !/\(\s*\d+\s*日間\s*\)/.test(String(event.formattedDateTime || ""));
 }
 
 function priorityRank(priority) {
@@ -126,15 +138,49 @@ function eventSort(a, b) {
   const bTime = tokyoTime(b.event) || { hour: 99, minute: 99 };
   return (
     priorityRank(a.screening.priority) - priorityRank(b.screening.priority) ||
+    relevanceScore(b.event) - relevanceScore(a.event) ||
     aTime.hour - bTime.hour ||
     aTime.minute - bTime.minute ||
     String(a.event.name).localeCompare(String(b.event.name), "ja")
   );
 }
 
+function relevanceScore(event) {
+  const text = [event.name, event.organizerName, event.groupName, event.description]
+    .filter(Boolean)
+    .join(" ");
+  let score = 0;
+  if (/(20代|20歳|25歳|30歳|35歳|若手|U30|第二新卒)/i.test(text)) score += 5;
+  if (/(AI|生成AI|DX|SaaS|エンジニア|プロダクト|新規事業|事業開発)/i.test(text)) score += 4;
+  if (/(キャリア|人事|HR|採用|営業|セールス|マーケ|広報|PR|デザイン|UX|PM|PdM|財務|法務|マネジメント)/i.test(text)) score += 3;
+  if (/(勉強会|セミナー|ワークショップ|事例|実践|学ぶ|LT)/i.test(text)) score += 2;
+  if (/(交流会|懇親会|コミュニティ|対話)/i.test(text)) score += 1;
+  return score;
+}
+
+function dedupeCandidates(candidates) {
+  const seen = new Set();
+  return candidates.filter(({ event }) => {
+    const key = String(event.name || "")
+      .normalize("NFKC")
+      .toLowerCase()
+      .replace(/[\s　【】\[\]（）()「」『』・!！?？:：\-—–_]/g, "");
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function placeLabel(event) {
-  const text = String(event.address || event.venueName || "").trim();
-  const ward = text.match(/(?:東京都)?([^\s　]{1,8}区)/);
+  const text = String(event.address || event.venueName || "")
+    .trim()
+    .replace(/^日本[、,\s　]*/, "");
+  const tokyoWard = text.match(/東京都([^\s　、,]{1,8}区)/);
+  if (tokyoWard) return tokyoWard[1];
+  const localText = text.replace(/^(?:東京都|神奈川県|千葉県|埼玉県)/, "");
+  const cityWard = localText.match(/([^\s　、,]{1,8}市[^\s　、,]{1,8}区)/);
+  if (cityWard) return cityWard[1];
+  const ward = localText.match(/(?:^|[\s　、,])([^\s　、,]{1,8}区)/);
   if (ward) return ward[1];
   const city = text.match(/(?:東京都|神奈川県|千葉県|埼玉県)?([^\s　]{1,12}市)/);
   if (city) return city[1];
@@ -259,11 +305,11 @@ async function main() {
       localDateFilter: true,
       detailsForTargets: true,
     });
-    const screened = result.events
+    const screened = dedupeCandidates(result.events
       .filter((event) => isNightEvent(event, date))
       .map((event) => ({ event, screening: screenEvent(event, masters) }))
       .filter(({ screening }) => screening.decision === "対象")
-      .sort(eventSort);
+      .sort(eventSort));
     const selected = screened.slice(0, 5);
     while (selected.length < 5) selected.push(null);
     selections.set(date, selected);
@@ -291,4 +337,13 @@ if (require.main === module) {
   });
 }
 
-module.exports = { isNightEvent, placeLabel, priceLabel, eventSort, candidateCell };
+module.exports = {
+  isNightEvent,
+  isSingleDayEvent,
+  placeLabel,
+  priceLabel,
+  relevanceScore,
+  dedupeCandidates,
+  eventSort,
+  candidateCell,
+};

@@ -764,6 +764,7 @@ function screenEvent(event, masters = null) {
     .filter(Boolean)
     .join(" ");
   const venueText = [event.venueName, event.address].filter(Boolean).join(" ");
+  const titleText = String(event.name || "");
 
   if (!venueText.trim()) {
     return {
@@ -771,6 +772,33 @@ function screenEvent(event, masters = null) {
       priority: "低",
       reason: "会場・住所が確認できず、会場開催として扱えないため",
       memo: distanceMemo(event),
+    };
+  }
+
+  if (/(カフェ|cafe|ベローチェ|veloce)/i.test(venueText)) {
+    return {
+      decision: "除外",
+      priority: "低",
+      reason: "会場がカフェ・ベローチェに該当するため",
+      memo: matchedMemo(venueText, /(カフェ|cafe|ベローチェ|veloce)/i),
+    };
+  }
+
+  if (/(経営者|社長|CEO|CXO|決裁者)/i.test(titleText)) {
+    return {
+      decision: "除外",
+      priority: "低",
+      reason: "経営者・決裁者向けで、20代の普通の会社員向けではないため",
+      memo: matchedMemo(titleText, /(経営者|社長|CEO|CXO|決裁者)/i),
+    };
+  }
+
+  if (/(40代|45歳|50代|60代|シニア)/.test(titleText)) {
+    return {
+      decision: "除外",
+      priority: "低",
+      reason: "対象年齢層から外れることが明示されているため",
+      memo: matchedMemo(titleText, /(40代|45歳|50代|60代|シニア)/),
     };
   }
 
@@ -796,8 +824,12 @@ function screenEvent(event, masters = null) {
       reason: "販促・体験/販売寄りで、会話目的のイベントではなさそうなため",
     },
     {
-      pattern: /(異業種交流(?:会)?|街コン|合コン|飲み会|朝活|婚活|恋活|縁結び|出会い|マッチング)/,
-      reason: "異業種交流会・街コン・合コン・飲み会・朝活・恋活系は今回の対象外のため",
+      pattern: /(異業種交流(?:会)?|街コン|合コン|飲み会|朝活|婚活|恋活|縁結び|出会い|マッチング|カフェ会)/,
+      reason: "異業種交流会・街コン・合コン・飲み会・朝活・恋活系・カフェ会は今回の対象外のため",
+    },
+    {
+      pattern: /(ポーカー|自転車について語る|グルメ交流会|商談会|年収\s*[0-9０-９,，]+\s*万|稼ぐ|稼げる|儲かる)/,
+      reason: "趣味中心・商談目的・収益訴求が強く、今回の対象から外れるため",
     },
   ];
   for (const rule of hardExclusions) {
@@ -809,6 +841,16 @@ function screenEvent(event, masters = null) {
         memo: matchedMemo(text, rule.pattern),
       };
     }
+  }
+
+  const professionalTheme = /(哲学対話|対話|読書会|勉強会|ワークショップ|キャリア|ビジネス|AI|生成AI|DX|SaaS|スタートアップ|新規事業|事業開発|マーケ|マーケティング|人事|HR|採用|営業|セールス|広報|PR|デザイン|UX|PM|PdM|決算|財務|法務|マネジメント|リーダーシップ|エンジニア|プロダクト|BtoB|ABM)/i;
+  if (/(交流会|懇親会|コミュニティ|人脈|友達作り|友だち作り|MBTI)/.test(text) && !professionalTheme.test(text)) {
+    return {
+      decision: "除外",
+      priority: "低",
+      reason: "仕事・学びのテーマがない、交流だけのイベントのため",
+      memo: "一般交流会",
+    };
   }
 
   const excludedOrganizer = masterMatch(
