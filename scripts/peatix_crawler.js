@@ -795,6 +795,10 @@ function screenEvent(event, masters = null) {
       pattern: /(美容ケア|住宅|展示場|整理券|物販|販売会|採用説明会|会社説明会|インターン|就活|新卒|転職フェア)/,
       reason: "販促・体験/販売寄りで、会話目的のイベントではなさそうなため",
     },
+    {
+      pattern: /(異業種交流(?:会)?|街コン|合コン|飲み会|朝活|婚活|恋活|縁結び|出会い|マッチング)/,
+      reason: "異業種交流会・街コン・合コン・飲み会・朝活・恋活系は今回の対象外のため",
+    },
   ];
   for (const rule of hardExclusions) {
     if (rule.pattern.test(text)) {
@@ -854,11 +858,11 @@ function screenEvent(event, masters = null) {
   }
 
   const strongTargets = [
-    /(交流会|合コン|出会い|MBTI|マッチング|友達作り|友だち作り|人脈|懇親会|飲み会|朝活|コミュニティ|異業種|越境|社会人)/,
+    /(交流会|MBTI|友達作り|友だち作り|人脈|懇親会|コミュニティ|越境|社会人)/,
     /(哲学対話|対話|読書会|勉強会|ワークショップ|キャリア|ビジネス|AI|生成AI|マーケ|マーケティング|人事|HR|採用|営業|セールス|広報|PR|デザイン|UX|PM|PdM|決算|財務|法務|マネジメント|リーダーシップ)/,
   ];
   if (strongTargets.some((pattern) => pattern.test(text))) {
-    const isVeryStrong = /(交流会|合コン|出会い|MBTI|マッチング|人脈|懇親会|異業種|越境|社会人|朝活)/.test(text);
+    const isVeryStrong = /(交流会|MBTI|人脈|懇親会|越境|社会人)/.test(text);
     return {
       decision: "対象",
       priority: isVeryStrong ? "高" : "中",
