@@ -133,6 +133,17 @@ assert.strictEqual(
   "first-choice score should outrank the legacy high/medium label"
 );
 assert.strictEqual(
+  relevanceScore(
+    event("AIと数学、証明の舞台裏", {
+      organizerName: "学術バーQ",
+      groupName: "学術バーQ",
+      description: "知と対話を愛する人のための遊び場として営業しています。",
+    })
+  ),
+  5,
+  "generic description text such as 営業しています must not receive a sales-theme bonus"
+);
+assert.strictEqual(
   dedupeCandidates([
     { event: event("【20歳〜35歳限定】月1マーケ会") },
     { event: event("【20歳〜35歳限定】 月1マーケ会！") },

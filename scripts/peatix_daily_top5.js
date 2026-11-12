@@ -178,17 +178,18 @@ function eventSort(a, b) {
 }
 
 function relevanceScore(event) {
-  const text = [event.name, event.organizerName, event.groupName, event.description]
+  const coreText = [event.name, event.organizerName, event.groupName]
     .filter(Boolean)
     .join(" ");
+  const text = [coreText, event.description].filter(Boolean).join(" ");
   let score = 0;
   if (PREFERRED_COMPANY_TERMS.some((term) => text.toLowerCase().includes(term.toLowerCase()))) {
     score += 10;
   }
   if (/(参加費)?無料|free\s*(event|seminar|workshop)?/i.test(text)) score += 4;
-  if (/(20代|20歳|25歳|30歳|35歳|若手|U30|第二新卒)/i.test(text)) score += 5;
+  if (/(20代|20歳|25歳|30歳|35歳|若手|U30|第二新卒)/i.test(coreText)) score += 5;
   if (/(AI|生成AI|DX|SaaS|エンジニア|プロダクト|新規事業|事業開発)/i.test(text)) score += 4;
-  if (/(キャリア|人事|HR|採用|営業|セールス|マーケ|広報|PR|デザイン|UX|PM|PdM|財務|法務|マネジメント)/i.test(text)) score += 3;
+  if (/(キャリア|人事|HR|採用|営業|セールス|マーケ|広報|PR|デザイン|UX|PM|PdM|財務|法務|マネジメント)/i.test(coreText)) score += 3;
   const hasLearning = /(勉強会|セミナー|ワークショップ|研究会|講座|事例|実践|学ぶ|LT|登壇|セッション)/i.test(text);
   const hasInteraction = /(交流会|懇親会|コミュニティ|対話|ネットワーキング|ミートアップ|Meetup)/i.test(text);
   if (hasLearning) score += 2;
